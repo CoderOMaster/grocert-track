@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Grocery Price Tracker</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Roboto', sans-serif;
+        }
+        body {
+            background-color: #f4f4f4;
+            color: #333;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+        .header h1 {
+            color: #007BFF;
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+            text-transform: uppercase;
+        }
+        .header p {
+            color: #666;
+            font-size: 1.1rem;
+        }
+        .search-section {
+            background: #ffffff;
+            padding: 2rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 15px rgba(0,0,0,0.1);
+            margin-bottom: 2rem;
+        }
+        .search-box {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        #searchInput, #locationInput, #pincodeInput {
+            width: 40%;
+            min-width: 200px;
+            padding: 1rem;
+            border: 2px solid #007BFF;
+            border-radius: 8px;
+            font-size: 1rem;
+            background: #f4f4f4;
+            color: #333;
+            transition: all 0.3s ease;
+        }
+        #searchInput:focus, #locationInput:focus, #pincodeInput:focus {
+            outline: none;
+            box-shadow: 0 0 8px rgba(0, 123, 255, 0.5);
+        }
+        #search-button, #show-past-results {
+            padding: 1rem 2rem;
+            background-color: #007BFF;
+            color: #ffffff;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: bold;
+            text-transform: uppercase;
+            transition: all 0.3s ease;
+        }
+        #search-button:hover, #show-past-results:hover {
+            background-color: #0056b3;
+            transform: scale(1.05);
+        }
+        .platforms {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 2rem;
+            margin-top: 3rem;
+        }
+        .platform-card {
+            background: #ffffff;
+            padding: 2rem;
+            border-radius: 8px;
+            text-align: center;
+            box-shadow: 0 2px 15px rgba(0,0,0,0.1);
+            transition: all 0.3s ease;
+            border: 1px solid #007BFF;
+        }
+        .platform-card:hover {
+            transform: translateY(-5px) scale(1.03);
+            box-shadow: 0 4px 20px rgba(0, 123, 255, 0.2);
+        }
+        .platform-card img {
+            width: 100px;
+            height: 100px;
+            object-fit: contain;
+            margin-bottom: 1rem;
+        }
+        .platform-card h3 {
+            color: #007BFF;
+            margin-bottom: 0.5rem;
+            font-size: 1.2rem;
+        }
+        #results {
+            margin-top: 2rem;
+            padding: 2rem;
+            border-radius: 8px;
+            background: #ffffff;
+            display: none; /* Hide by default */
+            border: 1px solid #007BFF;
+            color: #333;
+            overflow-x: auto;
+        }
+        .error-message {
+            color: #dc3545;
+            text-align: center;
+            margin-top: 1rem;
+            display: none;
+            font-weight: 500;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+        }
+        th, td {
+            padding: 1rem;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        th {
+            background-color: #007BFF;
+            color: white;
+        }
+        tr:hover {
+            background-color: #f5f5f5;
+        }
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f4f4f4;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #007BFF;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #0056b3;
+        }
+        .progress {
+            width: 100%;
+            background-color: #f4f4f4;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        .progress-bar {
+            height: 20px;
+            background-color: #007BFF;
+            color: white;
+            text-align: center;
+            line-height: 20px;
+            transition: width 0.3s ease;
+        }
+        .location-note {
+            color: #666;
+            font-size: 0.9rem;
+            margin-top: 0.5rem;
+            text-align: center;
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Grocery Price Tracker</h1>
+            <p>Discover the best prices across top retail platforms</p>
+        </div>
+
+        <div class="search-section">
+            <div class="search-box">
+                <input type="text" id="searchInput" placeholder="Enter product name" aria-label="Product Search">
+                <input type="text" id="locationInput" placeholder="Enter location (required for some platforms)" aria-label="Location">
+                <input type="text" id="pincodeInput" placeholder="Enter pincode (for Nature's Basket)" aria-label="Pincode">
+                <button id="search-button" onclick="performSearch()">Search</button>
+                <button id="show-past-results">Show Past Results</button>
+            </div>
+            <div id="error-message" class="error-message"></div>
+            <div id="location-note" class="location-note">
+                Note: Location is required for Zepto, Instamart, and Blinkit searches. Pincode is only required for Nature's Basket.
+            </div>
+        </div>
+
+        <div id="results" class="results-section">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Platform</th>
+                        <th>Product Name</th>
+                        <th>Price</th>
+                        <th>Weight</th>
+                        <th>Availability</th>
+                        <th>Search Query</th>
+                        <th>Location</th>
+                    </tr>
+                </thead>
+                <tbody id="resultsBody">
+                </tbody>
+            </table>
+        </div>
+
+        <div class="platforms">
+            <div class="platform-card">
+                <img src="https://logo.clearbit.com/zepto.com" alt="Zepto Logo">
+                <h3>Zepto</h3>
+            </div>
+            <div class="platform-card">
+                <img src="https://logo.clearbit.com/blinkit.com" alt="Blinkit Logo">
+                <h3>Blinkit</h3>
+            </div>
+            <div class="platform-card">
+                <img src="https://logo.clearbit.com/swiggy.com" alt="Instamart Logo">
+                <h3>Instamart</h3>
+            </div>
+            <div class="platform-card">
+                <img src="https://logo.clearbit.com/healthybuddha.in" alt="Healthy Buddha Logo">
+                <h3>Healthy Buddha</h3>
+            </div>
+            <div class="platform-card">
+                <img src="https://logo.clearbit.com/gourmetgarden.in" alt="Gourmet Garden Logo">
+                <h3>Gourmet Garden</h3>
+            </div>
+            <div class="platform-card">
+                <img src="https://logo.clearbit.com/bigbasket.com" alt="Big Basket Logo">
+                <h3>Big Basket</h3>
+            </div>
+            <div class="platform-card">
+                <img src="https://logo.clearbit.com/naturesbasket.co.in" alt="Nature Basket Logo">
+                <h3>Nature Basket</h3>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function performSearch() {
+            const query = document.getElementById('searchInput').value.trim();
+            const location = document.getElementById('locationInput').value.trim();
+            const pincode = document.getElementById('pincodeInput').value.trim();
+            const errorMessage = document.getElementById('error-message');
+            const resultsDiv = document.getElementById('results');
+            const resultsBody = document.getElementById('resultsBody');
+
+            resultsBody.innerHTML = '';
+            errorMessage.style.display = 'none';
+            errorMessage.textContent = '';
+            resultsDiv.style.display = 'none';
+
+            if (!query) {
+                errorMessage.textContent = 'Please enter a product name to search.';
+                errorMessage.style.display = 'block';
+                return;
+            }
+
+            const loadingRow = `
+                <tr>
+                    <td colspan="7" class="text-center">Loading...</td>
+                </tr>
+            `;
+            resultsBody.innerHTML = loadingRow;
+            resultsDiv.style.display = 'block';
+
+            fetch('/search', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ query: query, location: location, pincode: pincode })
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log('Received data:', data);  // Add this debug log
+                if (data.success) {
+                    displayResults(data.results);
+                } else {
+                    throw new Error(data.errorMessage || 'Failed to get results');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                document.getElementById('error-message').textContent = error.message || 'An error occurred while processing your request.';
+                document.getElementById('error-message').style.display = 'block';
+                document.getElementById('results').style.display = 'none';
+            });
+        }
+
+        document.getElementById('show-past-results').addEventListener('click', function() {
+            console.log('Fetching past results...');
+            
+            fetch('/get_past_results')
+                .then(response => response.json())
+                .then(data => {
+                    console.log('Received data:', data);  // Debug log
+                    
+                    if (data.success) {
+                        const resultsBody = document.getElementById('resultsBody');
+                        resultsBody.innerHTML = ''; // Clear existing results
+                        
+                        if (data.results.matches && data.results.matches.length > 0) {
+                            data.results.matches.forEach(match => {
+                                const row = `
+                                    <tr>
+                                        <td>${match.platform || 'N/A'}</td>
+                                        <td>${match.name || 'N/A'}</td>
+                                        <td>${match.price || 'N/A'}</td>
+                                        <td>${match.weight || 'N/A'}</td>
+                                        <td>${match.availability || 'N/A'}</td>
+                                        <td>${match.search_query || 'N/A'}</td>
+                                        <td>${match.location || 'N/A'}</td>
+                                    </tr>
+                                `;
+                                resultsBody.innerHTML += row;
+                            });
+                        } else {
+                            resultsBody.innerHTML = '<tr><td colspan="7" class="text-center">No past results found</td></tr>';
+                        }
+                    } else {
+                        console.error('Error:', data.errorMessage);
+                        document.getElementById('resultsBody').innerHTML = 
+                            `<tr><td colspan="7" class="text-center text-danger">${data.errorMessage}</td></tr>`;
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    document.getElementById('resultsBody').innerHTML = 
+                        '<tr><td colspan="7" class="text-center text-danger">Failed to load past results. Try again later.</td></tr>';
+                });
+        });
+
+        function displayResults(data) {
+            const resultsBody = document.getElementById('resultsBody');
+            resultsBody.innerHTML = '';
+            
+            // Show results div
+            document.getElementById('results').style.display = 'block';
+
+            // Check if data exists and has matches
+            if (!data || !data.matches || data.matches.length === 0) {
+                resultsBody.innerHTML = '<tr><td colspan="7" class="text-center">No matches found</td></tr>';
+                return;
+            }
+
+            // Iterate through matches and create rows
+            data.matches.forEach(match => {
+                if (match) {  // Check if match exists
+                    const row = `
+                        <tr>
+                            <td>${escapeHTML(String(match.platform || 'N/A'))}</td>
+                            <td>${escapeHTML(String(match.name || 'N/A'))}</td>
+                            <td>${escapeHTML(String(match.price || 'N/A'))}</td>
+                            <td>${escapeHTML(String(match.weight || 'N/A'))}</td>
+                            <td>${escapeHTML(String(match.availability || 'N/A'))}</td>
+                            <td>${escapeHTML(String(match.search_query || 'N/A'))}</td>
+                            <td>${escapeHTML(String(match.location || 'N/A'))}</td>
+                        </tr>
+                    `;
+                    resultsBody.innerHTML += row;
+                }
+            });
+
+            // If no rows were added
+            if (!resultsBody.innerHTML) {
+                resultsBody.innerHTML = '<tr><td colspan="7" class="text-center">No valid results found</td></tr>';
+            }
+        }
+
+        function escapeHTML(str) {
+            return str
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+    </script>
+</body>
+</html>
