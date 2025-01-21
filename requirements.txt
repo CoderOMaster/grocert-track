@@ -1,0 +1,8 @@
+selenium
+webdriver-manager
+beautifulsoup4
+flask
+python-dotenv
+openai
+redis
+pandas
